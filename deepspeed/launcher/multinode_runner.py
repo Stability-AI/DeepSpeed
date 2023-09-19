@@ -331,6 +331,7 @@ class SlurmRunner(MultiNodeRunner):
         total_process_count = sum(self.resource_pool.values())
         srun_cmd = [
             'srun',
+            '--label',
             '-n',
             f'{total_process_count}',
         ] + split(self.args.launcher_args)
