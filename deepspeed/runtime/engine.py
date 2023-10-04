@@ -3282,8 +3282,13 @@ class DeepSpeedEngine(Module):
         elif self.bfloat16_enabled() and not self.zero_optimization():
             bit16_groups = self.optimizer.bf16_groups
         else:
-            bit16_groups = self.optimizer.bit16_groups if self.zero_optimization_stage(
-            ) == 2 else self.optimizer.fp16_groups
+            if self.zero_optimization_stage() == 2:
+                bit16_groups = self.optimizer.bit16_groups
+            elif hasattr(self.optimizer, "bf16_groups"):
+                bit16_groups = self.optimizer.bf16_groups 
+            else:
+                # elif hasattr(self.optimizer, "fp16_groups"):
+                bit16_groups = self.optimizer.fp16_groups
 
         for bit16_group in bit16_groups:
             param_shapes = OrderedDict()
