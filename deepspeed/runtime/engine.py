@@ -2763,6 +2763,8 @@ class DeepSpeedEngine(Module):
             deepspeed_states = ['module']
             if self.optimizer is not None:
                 self.optimizer.refresh_fp32_params()
+            if load_lr_scheduler_states and self.lr_scheduler is not None:
+                self.lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
         else:
             has_zero_optimizer_state = self.zero_optimization() or self.bfloat16_enabled()
             if load_optimizer_states and self.optimizer is not None and not has_zero_optimizer_state:
@@ -3279,16 +3281,11 @@ class DeepSpeedEngine(Module):
         # if we don't use it, we get parameters ordered incorrectly
         if hasattr(self.optimizer, "round_robin_bit16_groups"):
             bit16_groups = self.optimizer.round_robin_bit16_groups
-        elif self.bfloat16_enabled() and not self.zero_optimization():
+        elif self.bfloat16_enabled() and hasattr(self.optimizer, "bf16_groups"):
             bit16_groups = self.optimizer.bf16_groups
         else:
-            if self.zero_optimization_stage() == 2:
-                bit16_groups = self.optimizer.bit16_groups
-            elif hasattr(self.optimizer, "bf16_groups"):
-                bit16_groups = self.optimizer.bf16_groups 
-            else:
-                # elif hasattr(self.optimizer, "fp16_groups"):
-                bit16_groups = self.optimizer.fp16_groups
+            bit16_groups = self.optimizer.bit16_groups if self.zero_optimization_stage(
+            ) == 2 else self.optimizer.fp16_groups
 
         for bit16_group in bit16_groups:
             param_shapes = OrderedDict()
